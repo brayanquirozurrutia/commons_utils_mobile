@@ -6,7 +6,7 @@ export const uploadImage = async (imageUri) => {
 
     formData.append('file', {
         uri: imageUri,
-        type: 'image/webp', // Cambiado a 'image/webp' si el tipo MIME es 'webp'
+        type: 'image/webp',
         name: 'photo.webp'
     });
 
