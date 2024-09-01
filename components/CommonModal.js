@@ -1,7 +1,15 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, StyleSheet } from 'react-native';
+import CommonButton from "./CommonButton";
 
-const CommonModal = ({ visible, onRequestClose, onConfirm, modalText }) => {
+const CommonModal = ({
+                         visible,
+                         onRequestClose,
+                         onConfirm,
+                         modalTitle,
+                         modalBodyText,
+                         children
+                     }) => {
     return (
         <Modal
             transparent={true}
@@ -11,14 +19,24 @@ const CommonModal = ({ visible, onRequestClose, onConfirm, modalText }) => {
         >
             <View style={styles.modalBackground}>
                 <View style={styles.modalContainer}>
-                    <Text style={styles.modalText}>{modalText}</Text>
+                    {modalTitle && <Text style={styles.modalTitle}>{modalTitle}</Text>}
+                    {modalBodyText && <Text style={styles.modalBodyText}>{modalBodyText}</Text>}
+                    <View style={styles.childrenContainer}>
+                        {children}
+                    </View>
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.button} onPress={onRequestClose}>
-                            <Text style={styles.buttonText}>Cancelar</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.button} onPress={onConfirm}>
-                            <Text style={styles.buttonText}>Aceptar</Text>
-                        </TouchableOpacity>
+                        {onRequestClose && (
+                            <CommonButton
+                                title="Cancelar"
+                                onPress={onRequestClose}
+                                style={styles.button}
+                            />
+                        )}
+                        <CommonButton
+                            title="Aceptar"
+                            onPress={onConfirm}
+                            style={styles.button}
+                        />
                     </View>
                 </View>
             </View>
@@ -40,24 +58,29 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
     },
-    modalText: {
-        fontSize: 18,
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    modalBodyText: {
+        fontSize: 16,
         marginBottom: 20,
         textAlign: 'center',
+    },
+    childrenContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        width: '100%',
     },
     button: {
-        margin: 10,
-        padding: 10,
-        backgroundColor: '#007BFF',
-        borderRadius: 5,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 16,
+        flex: 1,
+        marginHorizontal: 5,
     },
 });
 

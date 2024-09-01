@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import SquareButton from '../components/SquareButton';
+import SquareButton from '../../components/SquareButton';
 
 const Home = ({ navigation }) => {
     return (
