@@ -26,3 +26,21 @@ export const uploadImage = async (imageUri) => {
         return handleAxiosError(error);
     }
 };
+
+export const compareProducts = async (products) => {
+    try {
+        const response = await AxiosConfig.post(
+            '/compare_products',
+            products,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        return handleAxiosError(error);
+    }
+};
