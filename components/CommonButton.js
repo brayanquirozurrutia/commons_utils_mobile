@@ -1,9 +1,13 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-const CommonButton = ({ title, onPress }) => {
+const CommonButton = ({
+                          title,
+                          onPress,
+                          style
+}) => {
     return (
-        <TouchableOpacity style={styles.button} onPress={onPress}>
+        <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
             <Text style={styles.text}>{title}</Text>
         </TouchableOpacity>
     );
@@ -11,7 +15,6 @@ const CommonButton = ({ title, onPress }) => {
 
 const styles = StyleSheet.create({
     button: {
-        width: '80%',
         padding: 15,
         backgroundColor: '#007BFF',
         justifyContent: 'center',
