@@ -1,33 +1,83 @@
 import React, { useState } from 'react';
-import { View, Text, Button, ScrollView, Image, StyleSheet } from 'react-native';
-import { Input } from 'react-native-elements';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { compareProducts } from '../../services/api';
+import CommonInput from "../../components/CommonInput";
+import CommonButton from "../../components/CommonButton";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const Products = () => {
-    const [products, setProducts] = useState([{ name: '', brand: '', units_per_package: '', package_price: '', meters_per_unit: '' }]);
+    const [products, setProducts] = useState([{
+        name: '',
+        units_per_package: '',
+        package_price: '',
+        meters_per_unit: '',
+        errors: {}
+    }]);
     const [response, setResponse] = useState(null);
 
     const handleAddProduct = () => {
-        setProducts([...products, { name: '', brand: '', units_per_package: '', package_price: '', meters_per_unit: '' }]);
+        setProducts([...products, {
+            name: '',
+            units_per_package: '',
+            package_price: '',
+            meters_per_unit: '',
+            errors: {}
+        }]);
+    };
+
+    const handleRemoveProduct = () => {
+        if (products.length > 1) {
+            setProducts(products.slice(0, -1));
+        }
     };
 
     const handleInputChange = (index, field, value) => {
         const updatedProducts = [...products];
         updatedProducts[index][field] = value;
+        updatedProducts[index].errors[field] = '';
         setProducts(updatedProducts);
     };
 
+    const validateInputs = () => {
+        const updatedProducts = products.map(product => {
+            const errors = {};
+            if (!product.name) errors.name = 'El nombre es requerido';
+            if (!product.units_per_package) errors.units_per_package = 'Las unidades por paquete son requeridas';
+            if (!product.package_price) errors.package_price = 'El precio del paquete es requerido';
+            if (!product.meters_per_unit) errors.meters_per_unit = 'La cantidad por unidad es requerida';
+            return { ...product, errors };
+        });
+
+        setProducts(updatedProducts);
+
+        return updatedProducts.every(product => Object.keys(product.errors).length === 0);
+    };
+
     const handleSubmit = async () => {
-        // Convert number fields to integers
-        const formattedProducts = products.map(product => ({
+        // Limpia los errores antes de la validación
+        const clearedProducts = products.map(product => ({
             ...product,
-            units_per_package: parseInt(product.units_per_package, 10),
+            errors: {}
+        }));
+        setProducts(clearedProducts);
+
+        // Validar entradas
+        if (!validateInputs()) return;
+
+        // Formatear productos para el envío
+        const formattedProducts = products.map(product => ({
+            name: product.name,
             package_price: parseFloat(product.package_price),
+            units_per_package: parseInt(product.units_per_package, 10),
             meters_per_unit: parseFloat(product.meters_per_unit),
         }));
 
+        console.log('formattedProducts:', formattedProducts);
+
         try {
             const response = await compareProducts(formattedProducts);
+            console.log('response:', response);
             setResponse(response);
         } catch (error) {
             console.error('Error comparing products:', error);
@@ -35,43 +85,64 @@ const Products = () => {
     };
 
     return (
-        <ScrollView style={styles.container}>
+        <KeyboardAwareScrollView style={styles.container} enableOnAndroid={true} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>Products</Text>
             {products.map((product, index) => (
                 <View key={index} style={styles.productContainer}>
-                    <Input
-                        placeholder="Name"
+                    <CommonInput
+                        label="Nombre"
+                        placeholder="Ingresa el nombre del producto"
                         value={product.name}
                         onChangeText={(text) => handleInputChange(index, 'name', text)}
+                        required={true}
+                        error={product.errors.name}
+                        onSubmitEditing={() => Keyboard.dismiss()}
                     />
-                    <Input
-                        placeholder="Brand"
-                        value={product.brand}
-                        onChangeText={(text) => handleInputChange(index, 'brand', text)}
-                    />
-                    <Input
-                        placeholder="Units per Package"
-                        keyboardType="numeric"
+                    <CommonInput
+                        label="Unidades"
+                        placeholder="Ingresa las unidades por paquete"
                         value={product.units_per_package}
+                        keyboardType="numeric"
                         onChangeText={(text) => handleInputChange(index, 'units_per_package', text)}
+                        required={true}
+                        error={product.errors.units_per_package}
+                        onSubmitEditing={() => Keyboard.dismiss()}
                     />
-                    <Input
-                        placeholder="Package Price"
-                        keyboardType="numeric"
+                    <CommonInput
+                        label="Precio"
+                        placeholder="Ingresa el precio del paquete"
                         value={product.package_price}
-                        onChangeText={(text) => handleInputChange(index, 'package_price', text)}
-                    />
-                    <Input
-                        placeholder="Meters per Unit"
                         keyboardType="numeric"
+                        onChangeText={(text) => handleInputChange(index, 'package_price', text)}
+                        required={true}
+                        error={product.errors.package_price}
+                        onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                    <CommonInput
+                        label="Cantidad por unidad"
+                        placeholder="metros, gramos, mililitros, etc."
                         value={product.meters_per_unit}
+                        keyboardType="numeric"
                         onChangeText={(text) => handleInputChange(index, 'meters_per_unit', text)}
+                        required={true}
+                        error={product.errors.meters_per_unit}
+                        onSubmitEditing={() => Keyboard.dismiss()}
                     />
                 </View>
             ))}
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity onPress={handleAddProduct} style={styles.addButton}>
+                    <Icon name="add" size={24} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleRemoveProduct} style={styles.removeButton}>
+                    <Icon name="remove" size={24} color="#fff" />
+                </TouchableOpacity>
+            </View>
             <View style={{ marginBottom: 30 }}>
-                <Button title="Add Product" onPress={handleAddProduct} />
-                <Button title="Submit" onPress={handleSubmit} />
+                <CommonButton
+                    title="Comparar Productos"
+                    onPress={handleSubmit}
+                />
             </View>
 
             {response && (
@@ -109,7 +180,7 @@ const Products = () => {
                     )}
                 </View>
             )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
     );
 };
 
@@ -124,6 +195,28 @@ const styles = StyleSheet.create({
     },
     productContainer: {
         marginBottom: 16,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 10,
+    },
+    addButton: {
+        backgroundColor: '#007BFF',
+        borderRadius: 50,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    removeButton: {
+        backgroundColor: '#FF5252',
+        borderRadius: 50,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     responseContainer: {
         marginTop: 16,
