@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import {View, Text, Image, StyleSheet, TouchableOpacity, Keyboard, Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { compareProducts } from '../../services/api';
 import CommonInput from "../../components/CommonInput";
 import CommonButton from "../../components/CommonButton";
+import CommonModal from "../../components/CommonModal";
+import CommonSelect from "../../components/CommonSelect";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Picker } from '@react-native-picker/picker';
 
 const Products = () => {
     const [products, setProducts] = useState([{
@@ -15,6 +18,8 @@ const Products = () => {
         errors: {}
     }]);
     const [response, setResponse] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const unitOptions = ['mt', 'cm', 'kg', 'g', 'ml', 'l'];
 
     const handleAddProduct = () => {
         setProducts([...products, {
@@ -55,17 +60,14 @@ const Products = () => {
     };
 
     const handleSubmit = async () => {
-        // Limpia los errores antes de la validación
         const clearedProducts = products.map(product => ({
             ...product,
             errors: {}
         }));
         setProducts(clearedProducts);
 
-        // Validar entradas
         if (!validateInputs()) return;
 
-        // Formatear productos para el envío
         const formattedProducts = products.map(product => ({
             name: product.name,
             package_price: parseFloat(product.package_price),
@@ -73,14 +75,12 @@ const Products = () => {
             meters_per_unit: parseFloat(product.meters_per_unit),
         }));
 
-        console.log('formattedProducts:', formattedProducts);
-
         try {
             const response = await compareProducts(formattedProducts);
-            console.log('response:', response);
             setResponse(response);
+            setModalVisible(true);
         } catch (error) {
-            console.error('Error comparing products:', error);
+            Alert.alert('Error', 'Ocurrió un error al comparar los productos');
         }
     };
 
@@ -128,6 +128,7 @@ const Products = () => {
                         error={product.errors.meters_per_unit}
                         onSubmitEditing={() => Keyboard.dismiss()}
                     />
+                    <CommonSelect options={unitOptions} onSelect={() => {}} />
                 </View>
             ))}
             <View style={styles.buttonContainer}>
@@ -145,41 +146,51 @@ const Products = () => {
                 />
             </View>
 
-            {response && (
-                <View style={styles.responseContainer}>
-                    <Text style={styles.responseTitle}>Cheapest Option</Text>
-                    <Text>Cost per Meter: ${response.cheapest_option.cost_per_meter.toFixed(4)}</Text>
-                    <Text>Products: {response.cheapest_option.products.join(', ')}</Text>
-                    <Text>Total Cost: ${response.cheapest_option.total_cost.toFixed(2)}</Text>
-                    <Text>Total Meters: {response.cheapest_option.total_meters}</Text>
-                    {response.plot1 && (
-                        <Image
-                            source={{ uri: `data:image/png;base64,${response.plot1}` }}
-                            style={styles.image}
-                        />
-                    )}
+            <CommonModal
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+                onConfirm={() => setModalVisible(false)}
+                modalTitle="Resultados de la Comparación"
+            >
+                {response && (
+                    <View style={styles.responseContainer}>
+                        <Text style={styles.responseTitle}>Opción más barata</Text>
+                        <Text>Cost per Meter: ${response.cheapest_option.cost_per_meter.toFixed(4)}</Text>
+                        <Text>Products: {response.cheapest_option.products.join(', ')}</Text>
+                        <Text>Total Cost: ${response.cheapest_option.total_cost.toFixed(2)}</Text>
+                        <Text>Total Meters: {response.cheapest_option.total_meters}</Text>
+                        {response.plot1 && (
+                            <Image
+                                source={{ uri: `data:image/png;base64,${response.plot1}` }}
+                                style={styles.image}
+                                resizeMode={'contain'}
+                            />
+                        )}
 
-                    <Text style={styles.responseTitle}>Most Convenient Option</Text>
-                    <Text>Cost per Meter: ${response.convenient_option.cost_per_meter.toFixed(4)}</Text>
-                    <Text>Products: {response.convenient_option.products.join(', ')}</Text>
-                    <Text>Total Cost: ${response.convenient_option.total_cost.toFixed(2)}</Text>
-                    <Text>Total Meters: {response.convenient_option.total_meters}</Text>
-                    {response.plot2 && (
-                        <Image
-                            source={{ uri: `data:image/png;base64,${response.plot2}` }}
-                            style={styles.image}
-                        />
-                    )}
+                        <Text style={styles.responseTitle}>Most Convenient Option</Text>
+                        <Text>Cost per Meter: ${response.convenient_option.cost_per_meter.toFixed(4)}</Text>
+                        <Text>Products: {response.convenient_option.products.join(', ')}</Text>
+                        <Text>Total Cost: ${response.convenient_option.total_cost.toFixed(2)}</Text>
+                        <Text>Total Meters: {response.convenient_option.total_meters}</Text>
+                        {response.plot2 && (
+                            <Image
+                                source={{ uri: `data:image/png;base64,${response.plot2}` }}
+                                style={styles.image}
+                                resizeMode={'contain'}
+                            />
+                        )}
 
-                    <Text style={styles.responseTitle}>Comparison of Selected Products</Text>
-                    {response.plot3 && (
-                        <Image
-                            source={{ uri: `data:image/png;base64,${response.plot3}` }}
-                            style={styles.image}
-                        />
-                    )}
-                </View>
-            )}
+                        <Text style={styles.responseTitle}>Comparison of Selected Products</Text>
+                        {response.plot3 && (
+                            <Image
+                                source={{ uri: `data:image/png;base64,${response.plot3}` }}
+                                style={styles.image}
+                                resizeMode={'contain'}
+                            />
+                        )}
+                    </View>
+                )}
+            </CommonModal>
         </KeyboardAwareScrollView>
     );
 };
@@ -220,6 +231,7 @@ const styles = StyleSheet.create({
     },
     responseContainer: {
         marginTop: 16,
+        width: '100%',
     },
     responseTitle: {
         fontSize: 18,
@@ -229,6 +241,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 300,
         marginTop: 16,
+        resizeMode: 'contain',
     },
 });
 

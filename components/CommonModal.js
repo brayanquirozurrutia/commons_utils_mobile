@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet } from 'react-native';
+import { Modal, View, Text, StyleSheet, ScrollView } from 'react-native';
 import CommonButton from "./CommonButton";
 
 const CommonModal = ({
@@ -21,9 +21,11 @@ const CommonModal = ({
                 <View style={styles.modalContainer}>
                     {modalTitle && <Text style={styles.modalTitle}>{modalTitle}</Text>}
                     {modalBodyText && <Text style={styles.modalBodyText}>{modalBodyText}</Text>}
-                    <View style={styles.childrenContainer}>
-                        {children}
-                    </View>
+                    <ScrollView style={styles.scrollContainer}>
+                        <View style={styles.childrenContainer}>
+                            {children}
+                        </View>
+                    </ScrollView>
                     <View style={styles.buttonContainer}>
                         {onRequestClose && (
                             <CommonButton
@@ -52,11 +54,16 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContainer: {
-        width: 300,
+        width: '90%',
+        maxHeight: '80%',
         padding: 20,
         backgroundColor: 'white',
         borderRadius: 10,
         alignItems: 'center',
+    },
+    scrollContainer: {
+        maxHeight: '90%',
+        marginBottom: 20,
     },
     modalTitle: {
         fontSize: 20,
@@ -71,7 +78,6 @@ const styles = StyleSheet.create({
     },
     childrenContainer: {
         alignItems: 'center',
-        marginBottom: 20,
     },
     buttonContainer: {
         flexDirection: 'row',
