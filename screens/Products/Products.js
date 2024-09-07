@@ -4,29 +4,34 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { compareProducts } from '../../services/api';
 import CommonInput from "../../components/CommonInput";
 import CommonButton from "../../components/CommonButton";
-import CommonModal from "../../components/CommonModal";
 import CommonSelect from "../../components/CommonSelect";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Picker } from '@react-native-picker/picker';
 
 const Products = () => {
     const [products, setProducts] = useState([{
         name: '',
         units_per_package: '',
         package_price: '',
-        meters_per_unit: '',
+        quantity_per_unit: '',
         errors: {}
     }]);
+    const [selectedUnit, setSelectedUnit] = useState('');
     const [response, setResponse] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const unitOptions = ['mt', 'cm', 'kg', 'g', 'ml', 'l'];
+    const unitOptions = [
+        { label: 'Metros', value: 'mt' },
+        { label: 'Centímetros', value: 'cm' },
+        { label: 'Kilogramos', value: 'kg' },
+        { label: 'Gramos', value: 'g' },
+        { label: 'Mililitros', value: 'ml' },
+        { label: 'Litros', value: 'l' },
+    ];
 
     const handleAddProduct = () => {
         setProducts([...products, {
             name: '',
             units_per_package: '',
             package_price: '',
-            meters_per_unit: '',
+            quantity_per_unit: '',
             errors: {}
         }]);
     };
@@ -44,19 +49,28 @@ const Products = () => {
         setProducts(updatedProducts);
     };
 
+    const handleSelectChange = (option) => {
+        setSelectedUnit(option.value);
+    };
+
     const validateInputs = () => {
         const updatedProducts = products.map(product => {
             const errors = {};
             if (!product.name) errors.name = 'El nombre es requerido';
             if (!product.units_per_package) errors.units_per_package = 'Las unidades por paquete son requeridas';
             if (!product.package_price) errors.package_price = 'El precio del paquete es requerido';
-            if (!product.meters_per_unit) errors.meters_per_unit = 'La cantidad por unidad es requerida';
+            if (!product.quantity_per_unit) errors.quantity_per_unit = 'La cantidad por unidad es requerida';
             return { ...product, errors };
         });
 
         setProducts(updatedProducts);
 
         return updatedProducts.every(product => Object.keys(product.errors).length === 0);
+    };
+
+    const getUnitLabel = (value) => {
+        const selectedOption = unitOptions.find(option => option.value === value);
+        return selectedOption ? selectedOption.label : value;
     };
 
     const handleSubmit = async () => {
@@ -72,13 +86,17 @@ const Products = () => {
             name: product.name,
             package_price: parseFloat(product.package_price),
             units_per_package: parseInt(product.units_per_package, 10),
-            meters_per_unit: parseFloat(product.meters_per_unit),
+            quantity_per_unit: parseFloat(product.quantity_per_unit),
         }));
 
+        const payload = {
+            products: formattedProducts,
+            unit_type: selectedUnit,
+        };
+
         try {
-            const response = await compareProducts(formattedProducts);
+            const response = await compareProducts(payload);
             setResponse(response);
-            setModalVisible(true);
         } catch (error) {
             Alert.alert('Error', 'Ocurrió un error al comparar los productos');
         }
@@ -86,7 +104,6 @@ const Products = () => {
 
     return (
         <KeyboardAwareScrollView style={styles.container} enableOnAndroid={true} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>Products</Text>
             {products.map((product, index) => (
                 <View key={index} style={styles.productContainer}>
                     <CommonInput
@@ -120,17 +137,22 @@ const Products = () => {
                     />
                     <CommonInput
                         label="Cantidad por unidad"
-                        placeholder="metros, gramos, mililitros, etc."
-                        value={product.meters_per_unit}
+                        placeholder="Ingresa la cantidad por unidad"
+                        value={product.quantity_per_unit}
                         keyboardType="numeric"
-                        onChangeText={(text) => handleInputChange(index, 'meters_per_unit', text)}
+                        onChangeText={(text) => handleInputChange(index, 'quantity_per_unit', text)}
                         required={true}
-                        error={product.errors.meters_per_unit}
+                        error={product.errors.quantity_per_unit}
                         onSubmitEditing={() => Keyboard.dismiss()}
                     />
-                    <CommonSelect options={unitOptions} onSelect={() => {}} />
                 </View>
             ))}
+            <CommonSelect
+                options={unitOptions}
+                value={selectedUnit}
+                onSelect={handleSelectChange}
+                error={null}
+            />
             <View style={styles.buttonContainer}>
                 <TouchableOpacity onPress={handleAddProduct} style={styles.addButton}>
                     <Icon name="add" size={24} color="#fff" />
@@ -145,52 +167,52 @@ const Products = () => {
                     onPress={handleSubmit}
                 />
             </View>
-
-            <CommonModal
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-                onConfirm={() => setModalVisible(false)}
-                modalTitle="Resultados de la Comparación"
-            >
-                {response && (
-                    <View style={styles.responseContainer}>
-                        <Text style={styles.responseTitle}>Opción más barata</Text>
-                        <Text>Cost per Meter: ${response.cheapest_option.cost_per_meter.toFixed(4)}</Text>
-                        <Text>Products: {response.cheapest_option.products.join(', ')}</Text>
-                        <Text>Total Cost: ${response.cheapest_option.total_cost.toFixed(2)}</Text>
-                        <Text>Total Meters: {response.cheapest_option.total_meters}</Text>
-                        {response.plot1 && (
+            {response && (
+                <View style={styles.responseContainer}>
+                    {response.plot1 && (
+                        <>
+                            <Text style={styles.responseTitle}>Opción más barata</Text>
+                            <Text>
+                                Costo por {getUnitLabel(selectedUnit)}: ${response.cheapest_option.cost_per_unit.toFixed(4)}
+                            </Text>
+                            <Text>Producto: {response.cheapest_option.products.join(', ')}</Text>
+                            <Text>Costo total: ${response.cheapest_option.total_cost.toFixed(2)}</Text>
+                            <Text>{getUnitLabel(selectedUnit)} totales: {response.cheapest_option.total_units}</Text>
                             <Image
                                 source={{ uri: `data:image/png;base64,${response.plot1}` }}
                                 style={styles.image}
                                 resizeMode={'contain'}
                             />
-                        )}
-
-                        <Text style={styles.responseTitle}>Most Convenient Option</Text>
-                        <Text>Cost per Meter: ${response.convenient_option.cost_per_meter.toFixed(4)}</Text>
-                        <Text>Products: {response.convenient_option.products.join(', ')}</Text>
-                        <Text>Total Cost: ${response.convenient_option.total_cost.toFixed(2)}</Text>
-                        <Text>Total Meters: {response.convenient_option.total_meters}</Text>
-                        {response.plot2 && (
+                        </>
+                    )}
+                    {response.plot2 && (
+                        <>
+                            <Text style={styles.responseTitle}>Opción más conveniente</Text>
+                            <Text>
+                                Costo por {getUnitLabel(selectedUnit)}: ${response.convenient_option.cost_per_unit.toFixed(4)}
+                            </Text>
+                            <Text>Producto: {response.convenient_option.products.join(', ')}</Text>
+                            <Text>Costo total: ${response.convenient_option.total_cost.toFixed(2)}</Text>
+                            <Text>{getUnitLabel(selectedUnit)} totales: {response.convenient_option.total_units}</Text>
                             <Image
                                 source={{ uri: `data:image/png;base64,${response.plot2}` }}
                                 style={styles.image}
                                 resizeMode={'contain'}
                             />
-                        )}
-
-                        <Text style={styles.responseTitle}>Comparison of Selected Products</Text>
-                        {response.plot3 && (
+                        </>
+                    )}
+                    {response.plot3 && (
+                        <>
+                            <Text style={styles.responseTitle}>Comparación de opciones</Text>
                             <Image
                                 source={{ uri: `data:image/png;base64,${response.plot3}` }}
                                 style={styles.image}
                                 resizeMode={'contain'}
                             />
-                        )}
-                    </View>
-                )}
-            </CommonModal>
+                        </>
+                    )}
+                </View>
+            )}
         </KeyboardAwareScrollView>
     );
 };
@@ -198,11 +220,6 @@ const Products = () => {
 const styles = StyleSheet.create({
     container: {
         padding: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 16,
     },
     productContainer: {
         marginBottom: 16,
@@ -236,6 +253,8 @@ const styles = StyleSheet.create({
     responseTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 8,
     },
     image: {
         width: '100%',
