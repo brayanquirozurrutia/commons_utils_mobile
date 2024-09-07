@@ -1,86 +1,87 @@
-import React, { useState } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Menu, Button, Text, Divider } from 'react-native-paper';
+import {colors} from '../styles/colors';
 
-const CommonSelect = ({ options, onSelect }) => {
-    const [selectedValue, setSelectedValue] = useState(options[0]);
-    const [modalVisible, setModalVisible] = useState(false);
+const CommonSelect = ({
+                          options = [],
+                          value,
+                          onSelect,
+                          error = null,
+                          required = false,
+                      }) => {
+    const [visible, setVisible] = React.useState(false);
+    const [buttonLayout, setButtonLayout] = React.useState(null);
 
-    const handleSelect = (itemValue) => {
-        setSelectedValue(itemValue);
-        onSelect(itemValue);
-        setModalVisible(false);
+    const openMenu = () => setVisible(true);
+    const closeMenu = () => setVisible(false);
+
+    const handleSelect = (option) => {
+        onSelect(option);
+        closeMenu();
     };
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity
-                style={styles.inputContainer}
-                onPress={() => setModalVisible(true)}
+            <View
+                onLayout={(event) => setButtonLayout(event.nativeEvent.layout)}
             >
-                <Text style={styles.inputText}>{selectedValue}</Text>
-            </TouchableOpacity>
-
-            <Modal
-                visible={modalVisible}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={selectedValue}
-                            onValueChange={(itemValue) => handleSelect(itemValue)}
+                <Menu
+                    visible={visible}
+                    onDismiss={closeMenu}
+                    anchor={
+                        <Button
+                            onPress={openMenu}
+                            style={styles.button}
                         >
-                            {options.map((option, index) => (
-                                <Picker.Item key={index} label={option} value={option} />
-                            ))}
-                        </Picker>
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                            <Text>Cerrar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+                            {value ? value : 'Tipo de unidad' + (required ? '*' : '')}
+                        </Button>
+                    }
+                    contentStyle={[styles.menu, { width: buttonLayout?.width }]}
+                >
+                    <ScrollView style={styles.scrollView}>
+                        {options.map((option, index) => (
+                            <View key={index}>
+                                <Menu.Item
+                                    onPress={() => handleSelect(option)}
+                                    title={option.label}
+                                />
+                                {index < options.length - 1 && <Divider />}
+                            </View>
+                        ))}
+                    </ScrollView>
+                </Menu>
+            </View>
+            {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
+        marginVertical: 10,
     },
-    inputContainer: {
-        width: '100%',
-        padding: 10,
-        borderWidth: 1,
-        borderColor: 'gray',
+    button: {
+        justifyContent: 'flex-start',
+        textAlign: 'left',
         borderRadius: 5,
-        backgroundColor: 'white',
-        justifyContent: 'center',
+        paddingVertical: 3,
+        backgroundColor: '#fff',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        borderColor: colors.blue,
+        color: '#000',
     },
-    inputText: {
-        fontSize: 18,
+    menu: {
+        maxHeight: 250,
     },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    scrollView: {
+        maxHeight: 200,
     },
-    pickerContainer: {
-        width: 300,
-        backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
-    },
-    closeButton: {
-        marginTop: 10,
-        alignItems: 'center',
+    errorText: {
+        color: '#FF5252',
+        marginTop: 5,
+        fontSize: 12,
     },
 });
 
